@@ -1,5 +1,6 @@
 import React from 'react';
 import Aux from '../../../hocc/Auxx';
+import Button from '../../UI/Button/Button';
 
 const orderSum = props => {
     
@@ -14,7 +15,10 @@ const orderSum = props => {
             <ul>
                 {ingredientSum}
             </ul>
+            <p><strong>Total price: {props.price.toFixed(2)}$</strong></p>
             <p>Continue to checkout?</p>
+            <Button btnType= "Danger" clicked= {props.canceled}>CANCEL</Button>
+            <Button btnType= "Success" clicked ={props.continued}>CONTINUE</Button>
         </Aux>
     )
 }
