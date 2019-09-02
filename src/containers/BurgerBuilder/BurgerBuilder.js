@@ -19,16 +19,24 @@ const INGREDIENT_PRICE = {
 class BurgerBuilder extends Component {
 
   state = {
-    ingredients: {
-      "salad": 0,
-      "cheese": 0,
-      "meat": 0,
-      "bacon": 0  
-    },
+    ingredients: null,
     totalPrice: 5,
     purchasable: false,
     purchasing: false,
     loading: false,
+    error: false,
+  }
+
+  componentDidMount () {
+    axios.get('https://react-burger-builder-3c2a3.firebaseio.com/ingredients.json')
+      .then(res => {
+        this.setState({ingredients: res.data})
+      })
+      .catch(err => {
+        this.setState({
+          error: true
+        })
+      })
   }
 
   updatePurchasable = (ingredients) => {
@@ -84,46 +92,61 @@ class BurgerBuilder extends Component {
   }
   
   purchaseContinueHandler = () => {
-    this.setState( {loading: true} )
-    const order = {
-      ingredients: this.state.ingredients,
-      price: this.totalPrice,
-      customer: {
-        name: 'Tolunay',
-        address: {
-          street: 'test street',
-          countr: 'Turkey'
 
-        },
-        email: 'test@test.com'
-      },
-      deliveryMethod: 'fastest'
-    }
-    axios.post('/orders.json', order)
-      .then(response => {
-        this.setState({loading: false, purchasing: false})
-      })
-      .catch(err =>{
-        this.setState({loading: false, purchasing: false})
-      })
+
+     const queryParams = [];
+
+    //  for(let i in this.state.ingredients){
+    //    queryParams.push(encodeURIComponent(i) + '=' + encodeURIComponent(this.state.ingredients[i]))
+    //  }
+     Object.keys(this.state.ingredients).forEach(i => {
+      queryParams.push(encodeURIComponent(i) + '=' + encodeURIComponent(this.state.ingredients[i]))
+     })
+
+     queryParams.push('price=' + this.state.totalPrice)
+
+     const queryString = queryParams.join('&');
+
+    this.props.history.push({
+      pathname: '/checkout',
+      search: '?' + queryString
+    })
   }
 
   render() {
     
-    const disabledInfo = {...this.state.ingredients};
+    let disabledInfo = {...this.state.ingredients};
   
-    for(let key in disabledInfo){
-      disabledInfo[key] = disabledInfo[key] === 0;
-    }
+    // for(let key in disabledInfo){
+    //   disabledInfo[key] = disabledInfo[key] === 0;
+    // }
+    
+    Object.keys(disabledInfo).forEach((igKey) => {
+      disabledInfo[igKey] = disabledInfo[igKey] === 0
+    })
 
+    let orderSum = null;
     
-    let orderSum = <OrderSum 
-      ingredients = {this.state.ingredients} 
-      canceled = {this.purcahaseCancelHandler} continued= {this.purchaseContinueHandler}
-      price = {this.state.totalPrice}/>
-    
-    if(this.state.loading){
-      orderSum = <Spinner />
+
+    let burger = this.state.error ? <p>Can not access the ingredients</p> : <Spinner />;
+
+    if(this.state.ingredients){
+      burger = 
+        <Aux>
+          <Burger ingredients = {this.state.ingredients} />
+          <BuildControls addIngredient = {this.addIngredientHandler} 
+            removeIngredient = {this.removeIngredientHandler}
+            disabled = {disabledInfo}
+            price={this.state.totalPrice}
+            purchasable = {this.state.purchasable}
+            ordered = {this.purchaseHandler}
+            />
+        </Aux>
+
+        orderSum = <OrderSum 
+        ingredients = {this.state.ingredients} 
+        canceled = {this.purcahaseCancelHandler} continued= {this.purchaseContinueHandler}
+        price = {this.state.totalPrice}/>
     }
 
     return (
@@ -131,14 +154,7 @@ class BurgerBuilder extends Component {
         <Modal show= {this.state.purchasing} modalClosed = {this.purcahaseCancelHandler}>
           {orderSum}
         </Modal>
-        <Burger ingredients = {this.state.ingredients} />
-        <BuildControls addIngredient = {this.addIngredientHandler} 
-          removeIngredient = {this.removeIngredientHandler}
-          disabled = {disabledInfo}
-          price={this.state.totalPrice}
-          purchasable = {this.state.purchasable}
-          ordered = {this.purchaseHandler}
-          />
+        {burger}
       </Aux>
     )
   }
