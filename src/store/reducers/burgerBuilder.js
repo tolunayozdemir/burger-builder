@@ -1,4 +1,5 @@
-import * as actionTypes from '../actions/actionTypes'
+import * as actionTypes from '../actions/actionTypes';
+import { updateObject } from '../utilty';
 
 const INGREDIENT_PRICE = {
     salad: 1,
@@ -16,12 +17,12 @@ const initialState = {
 const reducer = (state = initialState, action) => {
     switch(action.type) {
         case actionTypes.ADD_INGREDIENT:
+            const updatedIngredient = { [action.ingredientName] : state.ingredients[action.ingredientName] + 1 }
+            const updatedIngredients = updateObject(state.ingredients, updatedIngredient )
+
             return {
                 ...state,
-                ingredients: {
-                    ...state.ingredients,
-                    [action.ingredientName] : state.ingredients[action.ingredientName] + 1
-                },
+                ingredients: updatedIngredients,
                 totalPrice: state.totalPrice + INGREDIENT_PRICE[action.ingredientName]
             }
         case actionTypes.REMOVE_INGREDIENT:
