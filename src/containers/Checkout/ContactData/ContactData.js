@@ -5,17 +5,10 @@ import Button from '../../../components/UI/Button/Button';
 import classes from './ContactData.module.css';
 import Spinner from '../../../components/UI/Spinner/Spinner';
 import Input from '../../../components/UI/Input/Input';
+import { connect } from 'react-redux';
 
 class ContactData extends Component{
     state = {
-      // inputChangedHandler = (event, formElementIdentifier) => {
-      //   const updatedOrderForm = {...this.state.orderForm};
-      //   const updatedFormElement = {...updatedOrderForm[formElementIdentifier]}
-  
-      //   updatedFormElement.value = event.target.value
-      //   updatedOrderForm[formElementIdentifier] = updatedFormElement
-      //   this.setState({orderForm: updatedOrderForm})
-      // }
         orderForm: {                     
           name: {
             elementType: 'input',
@@ -23,7 +16,12 @@ class ContactData extends Component{
               type: 'text',
               placeholder: 'Your Name'
             },
-            value: ''
+            value: '',
+            validation: {
+              required: true
+            },
+            touched: false,
+            valid: false
           },
           email: {
             elementType: 'input',
@@ -31,7 +29,12 @@ class ContactData extends Component{
               type: 'email',
               placeholder: 'Your Email'
             },
-            value: ''
+            value: '',
+            validation: {
+              required: true
+            },
+            touched: false,
+            valid: false
           },
           street: {
             elementType: 'input',
@@ -39,7 +42,12 @@ class ContactData extends Component{
               type: 'text',
               placeholder: 'Your Street'
             },
-            value: ''
+            value: '',
+            validation: {
+              required: true
+            },
+            touched: false,
+            valid: false
           },
           country: {
             elementType: 'input',
@@ -47,7 +55,12 @@ class ContactData extends Component{
               type: 'text',
               placeholder: 'Your Country'
             },
-            value: ''
+            value: '',
+            validation: {
+              required: true
+            },
+            touched: false,
+            valid: false
           },
           zipCode: {
             elementType: 'input',
@@ -55,7 +68,14 @@ class ContactData extends Component{
               type: 'text',
               placeholder: 'ZIP Code'
             },
-            value: ''
+            value: '',
+            validation: {
+              required: true,
+              minLength: 5,
+              maxLength: 5
+            },
+            touched: false,
+            valid: false
           },
           deliveryMethod: {
             elementType: 'select',
@@ -65,10 +85,30 @@ class ContactData extends Component{
                 {value: 'Cheapest', displayValue: 'Cheapest'}
               ]
             },
-            value: ''
+            value: '',
+            validation : {},
+            valid: true,
+            touched: true
           }
         },
-        loading: false
+        loading: false,
+        formIsValid: false
+    }
+
+    checkValidity(value, rules) {
+      let isValid = true;
+      
+      if(rules.required){
+        isValid = value.trim() !== '' && isValid
+      }
+
+      if(rules.minLength) {
+        isValid = value.length >= rules.minLength && isValid
+      }
+      if(rules.maxLength) {
+        isValid = value.length <= rules.maxLength && isValid
+      }
+      return isValid;
     }
 
     orderHandler = (event) => {
@@ -83,7 +123,7 @@ class ContactData extends Component{
 
         this.setState( {loading: true} )
         const order = {
-          ingredients: this.props.ingredients,
+          ingredients: this.props.ings,
           price: this.props.price,
           orderData: formData
           
@@ -103,8 +143,16 @@ class ContactData extends Component{
       const updatedFormElement = {...updatedOrderForm[formElementIdentifier]}
 
       updatedFormElement.value = event.target.value
+      updatedFormElement.touched = true
+      updatedFormElement.valid = this.checkValidity(updatedFormElement.value, updatedFormElement.validation)
       updatedOrderForm[formElementIdentifier] = updatedFormElement
-      this.setState({orderForm: updatedOrderForm})
+
+      let formIsValid = true;
+      for(let formElementIdentifier in updatedOrderForm) {
+        formIsValid = updatedOrderForm[formElementIdentifier].valid && formIsValid
+      }
+      
+      this.setState({orderForm: updatedOrderForm, formIsValid: formIsValid})
     }
 
     render() {
@@ -120,16 +168,20 @@ class ContactData extends Component{
       }
       
       let form = (
-              <form onSubmit = {this.orderHandler}>
+        <form onSubmit = {this.orderHandler}>
+        <h4>Enter your contact data</h4>
                 {formElementsArray.map(formElement => (
                   <Input
                     key = {formElement.id} 
                     elementType = {formElement.config.elementType}
                     elementConfig = {formElement.config.elementConfig}
                     value = {formElement.config.value}
-                    changed = {(event) => this.inputChangedHandler(event, formElement.id)}  />
+                    changed = {(event) => this.inputChangedHandler(event, formElement.id)}  
+                    invalid = {!formElement.config.valid}
+                    shouldValidate = {formElement.config.validation}
+                    touched = {formElement.config.touched}/>
                 ))}
-                <Button btnType='Success'>Order</Button>
+                <Button btnType='Success' disabled= {!this.state.formIsValid}>Order</Button>
             </form>
       );
 
@@ -139,11 +191,18 @@ class ContactData extends Component{
 
       return (
         <div className = {classes.ContactData}>
-            <h4>Enter your contact data</h4>
+            
             {form}
         </div>
         )
     }
 }
 
-export default ContactData;
+const mapStateToProps = (state) => {
+  return {
+    ings: state.ingredients,
+    price: state.totalPrice
+  }
+}
+
+export default connect(mapStateToProps)(ContactData);
