@@ -1,38 +1,47 @@
 import React from 'react';
 import Order from '../../components/Order/Order';
 import axios from '../../axios-orders';
+import { connect } from 'react-redux'
+import withErrorHandler from '../../hocc/withErrorHandler/withErrorHandler';
+import * as actions from '../../store/actions/';
+import Spinner from '../../components/UI/Spinner/Spinner';
 
 class Orders extends React.Component{
     
-    state = {
-        orders: [],
-        loading: true
+    componentDidMount(){
+        this.props.onFetchOrders()
     }
 
-    componentDidMount(){
-        axios.get('https://react-burger-builder-3c2a3.firebaseio.com/orders.json')
-            .then(res => {
-                const fetchedOrders = []
-                for(let key in res.data){
-                    fetchedOrders.push({
-                        ...res.data[key],
-                        id: key
-                    })
-                }
-                this.setState({orders: fetchedOrders, loading: false})
-            })
-    }
     render(){
+        
+        let loading = <Spinner />
+        if(!this.props.loading){
+            loading = this.props.orders.map(order => (
+                <Order key = {order.id }
+                    ingredients = {order.ingredients}
+                    price= {order.price} />
+            ))
+        }
+
         return (
             <div>
-                {this.state.orders.map(order => (
-                    <Order key = {order.id }
-                        ingredients = {order.ingredients}
-                        price= {order.price} />
-                ))}
+                {loading}
             </div>
         )
     }
 }
 
-export default Orders;
+const mapStateToProps = state => {
+    return {
+        orders: state.order.orders,
+        loading: state.order.loading
+    }
+}
+
+const mapDispatchToProps = dispatch => {
+    return {
+        onFetchOrders: () => dispatch(actions.fetchOrders())
+    }
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(withErrorHandler(Orders, axios)) ;
